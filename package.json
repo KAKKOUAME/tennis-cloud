@@ -1,0 +1,8 @@
+{
+  "name": "tennis-coach-desk",
+  "version": "1.0.0",
+  "description": "网球技术问答投稿台 —— 纯 Node.js 全栈（零依赖），含验证题库、每日限额、ntfy 离线推送、管理员回复与首页匿名卡片",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

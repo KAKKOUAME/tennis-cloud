@@ -1,0 +1,22 @@
+# Koyeb 部署参考配置（App Spec）
+# 说明：Koyeb 主要通过控制台或 `koyeb` CLI 部署（连接 GitHub 后自动识别仓库内的 Dockerfile），
+#       此文件作为等价的 App Spec 参考。CLI 一键部署命令见 DEPLOYMENT.md。
+app: tennis-coach-desk
+services:
+  - name: web
+    type: web
+    ports:
+      - port: 3000
+        protocol: http
+    docker:
+      dockerfile: Dockerfile
+    env:
+      - PORT=3000
+      - DAILY_LIMIT=5
+    health_checks:
+      - port: 3000
+        path: /healthz
+        initial_delay: 10
+    scaling:
+      min: 1
+      max: 1

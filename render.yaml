@@ -1,0 +1,24 @@
+# Render 部署蓝图（Infrastructure as Code）
+# 用法：Render 控制台 → New → Blueprint → 连接 GitHub 仓库 → 选择此文件 → Create
+# 完成后获得 https://<service>.onrender.com 公网地址（免费额度）
+services:
+  - type: web
+    name: tennis-coach-desk
+    runtime: node                 # 用 Nixpacks 构建（项目零 npm 依赖，最快）
+    region: oregon                # 可选：singapore / frankfurt / oregon / ohio / virginia
+    plan: free                    # 免费 Web 服务（750 小时/月，约等于常驻）
+    branch: main
+    healthCheckPath: /healthz     # 平台每 30s 探活，失败会重启
+    buildCommand: "npm install"   # 无依赖，秒级完成
+    startCommand: "node server.js"
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: DAILY_LIMIT
+        value: "5"
+      - key: ADMIN_PASS
+        sync: false               # 部署后在控制台「Environment」手动填写强密码
+      - key: NTFY_TOPIC
+        sync: false               # 留空则每次随机；固定话题便于长期订阅
+      - key: BASE_URL
+        sync: false               # 部署后填 Render 分配的 https 域名，用于推送跳转

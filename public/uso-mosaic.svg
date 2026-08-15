@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <!-- 美网主题马赛克：仅参考球拍线床"不规则像素块"的纹理质感，
+       采用大小、间距、位置均随机散布的方块，不拼任何文字/字母 -->
+
+  <!-- 白色/浅色方块（主氛围层，散布排布） -->
+  <rect x="14" y="22" width="16" height="10" fill="rgba(255,255,255,0.16)"/>
+  <rect x="41" y="9" width="10" height="17" fill="rgba(255,255,255,0.13)"/>
+  <rect x="63" y="33" width="13" height="9" fill="rgba(255,255,255,0.15)"/>
+  <rect x="88" y="14" width="9" height="15" fill="rgba(255,255,255,0.11)"/>
+  <rect x="117" y="27" width="18" height="11" fill="rgba(255,255,255,0.14)"/>
+  <rect x="144" y="8" width="11" height="16" fill="rgba(255,255,255,0.12)"/>
+  <rect x="172" y="31" width="12" height="12" fill="rgba(255,255,255,0.15)"/>
+
+  <rect x="9" y="52" width="12" height="14" fill="rgba(255,255,255,0.13)"/>
+  <rect x="33" y="68" width="17" height="9" fill="rgba(255,255,255,0.15)"/>
+  <rect x="61" y="49" width="9" height="16" fill="rgba(255,255,255,0.11)"/>
+  <rect x="90" y="71" width="15" height="10" fill="rgba(255,255,255,0.14)"/>
+  <rect x="119" y="58" width="10" height="13" fill="rgba(255,255,255,0.12)"/>
+  <rect x="148" y="70" width="16" height="9" fill="rgba(255,255,255,0.16)"/>
+  <rect x="176" y="53" width="9" height="15" fill="rgba(255,255,255,0.13)"/>
+
+  <rect x="7" y="93" width="17" height="9" fill="rgba(255,255,255,0.13)"/>
+  <rect x="38" y="86" width="10" height="15" fill="rgba(255,255,255,0.11)"/>
+  <rect x="70" y="104" width="14" height="11" fill="rgba(255,255,255,0.17)"/>
+  <rect x="102" y="90" width="11" height="12" fill="rgba(255,255,255,0.13)"/>
+  <rect x="132" y="107" width="14" height="9" fill="rgba(255,255,255,0.15)"/>
+  <rect x="161" y="95" width="9" height="16" fill="rgba(255,255,255,0.12)"/>
+  <rect x="187" y="101" width="11" height="10" fill="rgba(255,255,255,0.14)"/>
+
+  <rect x="12" y="134" width="16" height="10" fill="rgba(255,255,255,0.13)"/>
+  <rect x="44" y="150" width="10" height="13" fill="rgba(255,255,255,0.15)"/>
+  <rect x="72" y="135" width="13" height="15" fill="rgba(255,255,255,0.11)"/>
+  <rect x="99" y="148" width="11" height="10" fill="rgba(255,255,255,0.14)"/>
+  <rect x="128" y="138" width="16" height="10" fill="rgba(255,255,255,0.14)"/>
+  <rect x="157" y="153" width="9" height="12" fill="rgba(255,255,255,0.12)"/>
+  <rect x="182" y="140" width="14" height="10" fill="rgba(255,255,255,0.16)"/>
+
+  <rect x="24" y="173" width="12" height="13" fill="rgba(255,255,255,0.14)"/>
+  <rect x="58" y="181" width="14" height="9" fill="rgba(255,255,255,0.12)"/>
+  <rect x="89" y="169" width="9" height="14" fill="rgba(255,255,255,0.13)"/>
+  <rect x="120" y="176" width="16" height="10" fill="rgba(255,255,255,0.15)"/>
+  <rect x="151" y="167" width="10" height="12" fill="rgba(255,255,255,0.11)"/>
+  <rect x="179" y="183" width="13" height="10" fill="rgba(255,255,255,0.13)"/>
+
+  <!-- 荧光黄 accent 方块（呼应美网荧光黄点缀，散布不规则） -->
+  <rect x="27" y="40" width="10" height="10" fill="rgba(204,255,0,0.22)"/>
+  <rect x="57" y="82" width="12" height="8" fill="rgba(204,255,0,0.17)"/>
+  <rect x="85" y="46" width="8" height="13" fill="rgba(204,255,0,0.19)"/>
+  <rect x="114" y="87" width="10" height="10" fill="rgba(204,255,0,0.16)"/>
+  <rect x="146" y="38" width="13" height="9" fill="rgba(204,255,0,0.20)"/>
+  <rect x="175" y="99" width="9" height="10" fill="rgba(204,255,0,0.15)"/>
+  <rect x="22" y="124" width="12" height="10" fill="rgba(204,255,0,0.18)"/>
+  <rect x="52" y="116" width="8" height="11" fill="rgba(204,255,0,0.14)"/>
+  <rect x="84" y="130" width="14" height="10" fill="rgba(204,255,0,0.19)"/>
+  <rect x="133" y="126" width="10" height="12" fill="rgba(204,255,0,0.16)"/>
+  <rect x="169" y="170" width="12" height="10" fill="rgba(204,255,0,0.18)"/>
+  <rect x="98" y="163" width="10" height="10" fill="rgba(204,255,0,0.20)"/>
+  <rect x="42" y="159" width="9" height="8" fill="rgba(204,255,0,0.15)"/>
+  <rect x="160" y="60" width="8" height="10" fill="rgba(204,255,0,0.14)"/>
+  <rect x="64" y="120" width="11" height="9" fill="rgba(204,255,0,0.17)"/>
+</svg>
