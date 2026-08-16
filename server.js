@@ -111,7 +111,7 @@ function pushNtfy(sub) {
 // ---------- HTTP 工具 ----------
 function sendJSON(res, code, obj) {
   const s = JSON.stringify(obj);
-  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' });
   res.end(s);
 }
 function readBody(req) {

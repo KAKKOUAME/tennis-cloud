@@ -342,7 +342,14 @@
 
   // ---- 首页卡片 ----
   function loadCards(){
-    fetchTimeout(API+'/cards').then(function(r){return r.json();}).then(function(d){
+    $('quotaPill').textContent='今日名额加载中…';
+    $('quotaPill').style.cursor='default';
+    $('quotaPill').title='';
+    $('quotaPill').onclick=null;
+    fetchTimeout(API+'/cards').then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(d){
       var lim=d.dailyLimit||5, used=d.usedToday||0;
       var left=Math.max(0,lim-used);
       $('quotaPill').textContent='剩余可投稿名额 '+left+' / '+lim+' 位';
@@ -351,12 +358,15 @@
       state.cards=d.cards||[];
       renderCatNav();
       renderCards();
-    }).catch(function(){
-      // 请求失败（如免费实例冷启动）时给出可点击重试，避免一直卡在“加载中”
-      $('quotaPill').textContent='今日名额获取失败，点此重试';
+    }).catch(function(err){
+      console.error('[今日名额] 加载失败', err);
+      $('quotaPill').textContent='今日名额获取失败';
       $('quotaPill').style.cursor='pointer';
+      $('quotaPill').title='点击重试';
       $('quotaPill').onclick=loadCards;
-      $('cardList').innerHTML='<div class="empty">加载失败，点上方名额处重试</div>';
+      $('cardList').innerHTML='<div class="empty">投稿列表加载失败。'+
+        '<button class="btn" id="cardRetry" style="margin-top:10px">点击重试</button></div>';
+      var rb=document.getElementById('cardRetry'); if(rb) rb.onclick=loadCards;
     });
   }
   function renderCatNav(){
@@ -468,6 +478,11 @@
         };
         box.appendChild(b);
       });
+    }).catch(function(err){
+      console.error('[测验] 加载失败', err);
+      $('quizQ').textContent='题目加载失败';
+      $('quizOpts').innerHTML='<button class="qopt" id="quizRetry">网络异常，点击重试</button>';
+      var rb=document.getElementById('quizRetry'); if(rb) rb.onclick=loadQuiz;
     });
   }
   function enterSubmit(){
@@ -655,7 +670,7 @@
     .then(function(r){return r.json();}).then(function(j){
       if(j.ok){state.adminToken=j.token;localStorage.setItem('tca_token',j.token);renderAdmin();}
       else{$('adminMsg').textContent='密码错误';}
-    }).catch(function(){ $('adminMsg').textContent='网络错误，请稍后重试'; });
+    }).catch(function(err){ console.error('[后台] 登录请求失败', err); $('adminMsg').textContent='网络错误：无法连接服务器，请检查网络后重试'; });
   };
   $('adminLogout').onclick=function(){state.adminToken='';localStorage.removeItem('tca_token');renderAdmin();};
 
