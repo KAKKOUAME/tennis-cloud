@@ -217,6 +217,7 @@
         <div class="opts" id="typeOpts">
           <div class="opt" data-v="technique">🎾 网球技术</div>
           <div class="opt" data-v="tactic">⚔️ 比赛战术</div>
+          <div class="opt" data-v="equipment">🛍️ 装备选择</div>
         </div>
       </div>
       <div class="field" id="subField" style="display:none">
@@ -424,7 +425,7 @@
       '<span class="tag'+(c.type==='tactic'?' tac':'')+'">'+esc(c.subcatLabel)+'</span></div>'+
       '<div class="q">❓ '+esc(c.question)+'</div>'+
       (media?'<div class="media">'+media+'</div>':'')+
-      '<div class="a"><span class="lab">🎾 博主建议</span>'+esc(c.answer)+'</div>'+
+      '<div class="a"><span class="lab">🎾 橘猫锐评</span>'+esc(c.answer)+'</div>'+
       '<div class="comments"><div class="cmt-head">💬 匿名交流 <span class="cmt-count">'+cmtCount+'</span></div>'+
       '<div class="cmt-list"></div>'+
       '<div class="cmt-form"><textarea class="cmt-input" maxlength="500" placeholder="匿名说点什么…（不暴露你的身份）"></textarea>'+
@@ -498,8 +499,10 @@
     var sub=$('subOpts');sub.innerHTML='';
     var opts = state.type==='technique'
       ? [['baseline','底线技术'],['mid','中场技术'],['net','网前技术']]
+      : state.type==='equipment'
+      ? [['racket','球拍'],['shoes','球鞋'],['string','球线']]
       : [['singles','单打战术'],['doubles','双打战术']];
-    $('subLabel').textContent = state.type==='technique'?'③ 选择技术环节':'③ 选择战术类型';
+    $('subLabel').textContent = state.type==='technique'?'③ 选择技术环节':state.type==='equipment'?'③ 选择装备品类':'③ 选择战术类型';
     opts.forEach(function(p){
       var d=document.createElement('div');d.className='opt';d.dataset.v=p[0];d.textContent=p[1];
       d.onclick=function(){state.subcat=p[0];[].forEach.call(sub.children,function(c){c.classList.toggle('on',c===d);});};
@@ -620,7 +623,7 @@
   }
   function pendingCard(s){
     var el=document.createElement('div');el.className='pending';
-    el.innerHTML='<div class="meta">#'+s.seq+' · '+esc(s.nickname)+' · '+(s.type==='tactic'?'比赛战术':'网球技术')+' / '+esc(s.subcatLabel)+' · '+esc(s.createdAt)+'</div>'+
+    el.innerHTML='<div class="meta">#'+s.seq+' · '+esc(s.nickname)+' · '+(s.type==='technique'?'网球技术':s.type==='equipment'?'装备选择':'比赛战术')+' / '+esc(s.subcatLabel)+' · '+esc(s.createdAt)+'</div>'+
       '<div class="q" style="font-weight:600;margin:4px 0">'+esc(s.text)+'</div>'+mediaHTML(s)+
       '<div class="reply-box"><textarea placeholder="输入博主的技术分析与训练建议…" class="ra"></textarea>'+
       '<div class="tabs" style="margin-top:8px"><div class="tab on" data-t="no">无图</div><div class="tab" data-t="yes">＋示范图</div></div>'+

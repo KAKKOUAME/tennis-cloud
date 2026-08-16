@@ -79,7 +79,7 @@ function pushNtfy(sub) {
   const title = 'New tennis submission #' + sub.seq; // 头信息仅限 ASCII，中文放正文
   const body = [
     '昵称：' + (sub.nickname || '匿名'),
-    '类型：' + (sub.type === 'technique' ? '网球技术' : '比赛战术') + ' / ' + sub.subcatLabel,
+    '类型：' + (sub.type === 'technique' ? '网球技术' : sub.type === 'equipment' ? '装备选择' : '比赛战术') + ' / ' + sub.subcatLabel,
     '问题：' + (sub.text || '（未填写文字）').slice(0, 200),
     '时间：' + sub.createdAt
   ].join('\n');
@@ -185,9 +185,11 @@ const server = http.createServer(async (req, res) => {
       if (used >= DAILY_LIMIT) return sendJSON(res, 429, { ok: false, msg: '今日投稿名额已满（' + DAILY_LIMIT + ' 位），明天再来吧～' });
       // 基础校验
       if (!b.nickname || !b.text) return sendJSON(res, 400, { ok: false, msg: '昵称与问题描述为必填' });
-      if (!['technique', 'tactic'].includes(b.type)) return sendJSON(res, 400, { ok: false, msg: '问题类型无效' });
+      if (!['technique', 'tactic', 'equipment'].includes(b.type)) return sendJSON(res, 400, { ok: false, msg: '问题类型无效' });
       const subcatLabel = (b.type === 'technique'
         ? ({ baseline: '底线技术', mid: '中场技术', net: '网前技术' }[b.subcat])
+        : b.type === 'equipment'
+        ? ({ racket: '球拍', shoes: '球鞋', string: '球线' }[b.subcat])
         : ({ singles: '单打战术', doubles: '双打战术' }[b.subcat])) || '未分类';
       const sub = {
         id: crypto.randomBytes(8).toString('hex'),
@@ -225,7 +227,7 @@ const server = http.createServer(async (req, res) => {
         .map((s) => ({
           id: s.id,
           type: s.type,
-          typeLabel: s.type === 'technique' ? '网球技术' : '比赛战术',
+          typeLabel: s.type === 'technique' ? '网球技术' : s.type === 'equipment' ? '装备选择' : '比赛战术',
           subcatLabel: s.subcatLabel,
           question: s.text,
           questionImages: (s.images || []).slice(0, 2),
