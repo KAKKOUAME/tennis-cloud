@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<title>🎾 网球技术问答台</title>
+<title>🎾 橘猫网球</title>
 <style>
   :root{
     /* 默认日常主题：橘猫品牌橙 */
@@ -65,7 +65,7 @@
   .hero h1{margin:0 0 6px;font-size:21px}
   .hero p{margin:0;font-size:13.5px;opacity:.95}
   .hero .cta{margin-top:6px;display:flex;gap:8px;flex-wrap:wrap}
-  .hero .cta .btn{background:#fff;color:var(--brand-d)}
+  .hero .cta .btn{background:transparent;color:#fff;border:1.5px solid #ffffffaa}
   .hero .cta .btn.ghost{background:transparent;color:#fff;border-color:#ffffffaa}
   .pill{display:inline-flex;align-items:center;gap:6px;background:#ffffff22;padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:600}
   .sec-title{font-size:16px;font-weight:800;margin:22px 4px 10px;display:flex;align-items:center;gap:8px}
@@ -162,7 +162,7 @@
 </head>
 <body>
 <header>
-  <div class="logo">🎾 网球技术问答台</div>
+  <div class="logo">🎾 橘猫网球</div>
   <div class="spacer"></div>
   <button class="icon-btn" id="shareBtn" title="分享二维码">🔗</button>
   <button class="icon-btn" id="qrBtn" title="扫码访问">📱</button>
@@ -174,7 +174,7 @@
   <section id="home">
     <div class="hero">
       <h1>橘猫网球，助您涨球！</h1>
-      <p>每天仅开放 5 位投稿名额，橘猫每日认真开展技战术分析 + 训练建议。<br>提问前要先过一道网球小测验哦～</p>
+      <p>每天仅开放 5 位投稿名额，橘猫每日认真开展技战术分析。<br>提问前要先过一道网球小测验哦～</p>
       <div class="cta">
         <button class="btn" id="askBtn">✍️ 我要提问</button>
         <button class="btn ghost" id="homeQrBtn">📱 分享给搭子</button>
@@ -300,6 +300,15 @@
 <script>
 (function(){
   var API='/api';
+  var PUBLIC_URL='https://web-production-9cda2.up.railway.app'; // 公网分享地址（部署域名变化后改此处）
+  // 带超时的 fetch：避免 Railway 免费实例冷启动时请求无限挂起（导致名额一直“加载中”、登录无响应）
+  function fetchTimeout(url, opts, ms){
+    ms=ms||12000;
+    var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+    var id=ctrl?setTimeout(function(){ctrl.abort();},ms):null;
+    var o=opts||{}; if(ctrl)o.signal=ctrl.signal;
+    return fetch(url,o).then(function(r){if(id)clearTimeout(id);return r;},function(e){if(id)clearTimeout(id);throw e;});
+  }
   var state={quiz:null,quizAns:null,type:null,subcat:null,imgs:[],video:null,adminToken:localStorage.getItem('tca_token')||'',cards:[],catFilter:null};
   function $(id){return document.getElementById(id);}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -333,13 +342,22 @@
 
   // ---- 首页卡片 ----
   function loadCards(){
-    fetch(API+'/cards').then(function(r){return r.json();}).then(function(d){
-      var left=Math.max(0,d.dailyLimit-d.usedToday);
-      $('quotaPill').textContent='剩余可投稿名额 '+left+' / '+d.dailyLimit+' 位';
+    fetchTimeout(API+'/cards').then(function(r){return r.json();}).then(function(d){
+      var lim=d.dailyLimit||5, used=d.usedToday||0;
+      var left=Math.max(0,lim-used);
+      $('quotaPill').textContent='剩余可投稿名额 '+left+' / '+lim+' 位';
+      $('quotaPill').style.cursor='default';
+      $('quotaPill').onclick=null;
       state.cards=d.cards||[];
       renderCatNav();
       renderCards();
-    }).catch(function(){$('cardList').innerHTML='<div class="empty">加载失败，请刷新</div>';});
+    }).catch(function(){
+      // 请求失败（如免费实例冷启动）时给出可点击重试，避免一直卡在“加载中”
+      $('quotaPill').textContent='今日名额获取失败，点此重试';
+      $('quotaPill').style.cursor='pointer';
+      $('quotaPill').onclick=loadCards;
+      $('cardList').innerHTML='<div class="empty">加载失败，点上方名额处重试</div>';
+    });
   }
   function renderCatNav(){
     var nav=$('catNav');nav.innerHTML='';
@@ -632,24 +650,25 @@
   }
   $('adminLoginBtn').onclick=function(){
     var p=$('adminPass').value;
-    fetch(API+'/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pass:p})})
+    $('adminMsg').textContent='登录中…';
+    fetchTimeout(API+'/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pass:p})})
     .then(function(r){return r.json();}).then(function(j){
       if(j.ok){state.adminToken=j.token;localStorage.setItem('tca_token',j.token);renderAdmin();}
       else{$('adminMsg').textContent='密码错误';}
-    });
+    }).catch(function(){ $('adminMsg').textContent='网络错误，请稍后重试'; });
   };
   $('adminLogout').onclick=function(){state.adminToken='';localStorage.removeItem('tca_token');renderAdmin();};
 
   // ---- 二维码 ----
   function openQR(){
-    var url=location.origin+location.pathname;
+    var url=PUBLIC_URL;
     $('qrImg').innerHTML=makeQR(url,{cell:6});
     $('qrLink').textContent=url;
     $('qrMask').classList.add('show');
   }
   $('qrBtn').onclick=openQR;$('homeQrBtn').onclick=openQR;$('shareBtn').onclick=openQR;
   $('qrClose').onclick=function(){$('qrMask').classList.remove('show');};
-  $('qrCopy').onclick=function(){navigator.clipboard&&navigator.clipboard.writeText(location.origin+location.pathname);toast('链接已复制');};
+  $('qrCopy').onclick=function(){navigator.clipboard&&navigator.clipboard.writeText(PUBLIC_URL);toast('链接已复制');};
 
   // ---- 导航 ----
   $('askBtn').onclick=function(){state.quizAns=null;loadQuiz();show('quizView');};
