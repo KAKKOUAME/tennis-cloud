@@ -186,8 +186,9 @@ function readBody(req) {
 }
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.json': 'application/json', '.ico': 'image/x-icon' };
 // ---------- 微信分享落地页 ----------
-// 规避微信内打开外链 / scheme 被拦截：二维码统一指向同源 /share，
-// 微信内显示“在浏览器打开”引导，非微信则 302 直跳真实页面。
+// 规避微信内打开外链 / scheme 被拦截：二维码统一指向同源 /share。
+// 非微信：服务端 302 直跳；微信内：落地页加载后默认立即 location.replace 到真实页面
+//（直接跳转、无需手动操作），仅当被微信拦截时才回退显示“在浏览器打开”引导按钮。
 function buildSharePage(realUrl) {
   const REAL = JSON.stringify(realUrl); // 防御 XSS / 注入
   return '<!doctype html><html lang="zh-CN"><head>'
@@ -213,16 +214,20 @@ function buildSharePage(realUrl) {
     + 'text-decoration:underline;cursor:pointer}'
     + '.note{margin-top:10px;font-size:11.5px;color:#bfe9cc;opacity:.85}</style></head>'
     + '<body><div class="card"><div class="logo">🎾</div><h1 class="ttl">橘猫网球</h1>'
-    + '<p class="tip">为获得完整功能（上传图片/视频、提交投稿），请'
-    + '<b style="color:#fff">在浏览器中打开</b>本页面。</p>'
-    + '<div class="arrow">↗</div>'
-    + '<p class="tip" style="margin:0">点右上角 <b>···</b> 菜单，选择 <b>「在浏览器打开」</b></p>'
+    + '<p class="tip" id="tip">正在打开页面…</p>'
+    + '<div class="arrow" id="arrow" style="display:none">↗</div>'
+    + '<div id="guide" style="display:none">'
+    + '<p class="tip" style="margin:0">若长时间未跳转，请点右上角 <b>···</b> →「在浏览器打开」</p>'
     + '<button class="btn btn-primary" id="openBtn">前往打开</button>'
     + '<button class="btn btn-ghost" id="copyBtn">复制链接</button>'
-    + '<div class="link" id="linkText"></div>'
+    + '<div class="link" id="linkText"></div></div>'
     + '<div class="note">若仍无法打开，请复制链接到手机自带浏览器访问。</div></div>'
     + '<script>var REAL=' + REAL + ';'
-    + 'document.getElementById("linkText").textContent=REAL;'
+    + 'function showGuide(){var t=document.getElementById("tip");if(t)t.textContent="请手动继续：";'
+    + 'var g=document.getElementById("guide");if(g)g.style.display="block";'
+    + 'var a=document.getElementById("arrow");if(a)a.style.display="block";'
+    + 'var l=document.getElementById("linkText");if(l)l.textContent=REAL;}'
+    + 'function go(){try{window.location.replace(REAL);}catch(e){showGuide();}}'
     + 'function fallback(){var ta=document.createElement("textarea");ta.value=REAL;'
     + 'ta.style.position="fixed";ta.style.top="-9999px";document.body.appendChild(ta);'
     + 'ta.focus();ta.select();try{document.execCommand("copy");alert("链接已复制");}'
@@ -231,7 +236,10 @@ function buildSharePage(realUrl) {
     + 'document.getElementById("copyBtn").onclick=function(){'
     + 'if(navigator.clipboard&&navigator.clipboard.writeText){'
     + 'navigator.clipboard.writeText(REAL).then(function(){alert("链接已复制");}).catch(fallback);}'
-    + 'else{fallback();}};<\/script></body></html>';
+    + 'else{fallback();}};'
+    + 'go();'
+    + 'setTimeout(function(){if(!document.hidden)showGuide();},1200);'
+    + '<\/script></body></html>';
 }
 
 function serveStatic(req, res, pathname) {
