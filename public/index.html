@@ -52,11 +52,20 @@
   /* 橘猫吉祥物：hero 卡片右下角，品牌形象主展示，更大更醒目；透明 PNG 直接落在渐变背景上 */
   /* 关键修复：footer 改为顶端对齐(flex-start)，避免被高大的橘猫把“今日名额”顶到 footer 底部、造成按钮与名额的视觉间距被撑大 */
   /* 新增：footer 设为定位上下文，让橘猫 absolute 后底部与左侧 seasonBadge 底端精确对齐 */
-  .hero-footer{display:flex;align-items:flex-start;justify-content:space-between;margin-top:8px;gap:8px;position:relative}
+  .hero-footer{display:flex;align-items:flex-start;justify-content:space-between;margin-top:8px;gap:8px;position:relative;min-height:200px}
   /* 图片已重新构图(裁掉多余透明边，内容向左上提)。此处使用 absolute 定位：bottom:0 使图片底部与 hero-meta(含 seasonBadge)底部对齐，实现仅垂直位移、不改尺寸的底部对齐效果 */
   .brand-cat-mascot{position:absolute;right:-4px;bottom:0;width:200px;height:auto;object-fit:contain;flex-shrink:0;
     filter:drop-shadow(0 10px 28px rgba(0,0,0,.38));pointer-events:none}
-  @media (max-width:380px){.brand-cat-mascot{width:165px;right:-2px}}
+  /* 移动端：橘猫改为正常流弹性子项（右下、底部对齐、缩小），彻底避免绝对定位向上溢出遮挡按钮与文字 */
+  @media (max-width:560px){
+    .hero{padding:18px 15px}
+    .hero h1{font-size:19px}
+    .hero p{font-size:13px;line-height:1.6}
+    .hero .cta{margin-top:10px}
+    .hero-footer{align-items:flex-end;gap:10px;margin-top:12px;min-height:auto}
+    .brand-cat-mascot{position:static;width:104px;right:auto;bottom:auto;align-self:flex-end;margin:0;flex:0 0 auto}
+  }
+  @media (max-width:380px){.brand-cat-mascot{width:88px}}
   .season-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.22);color:#fff;
     border:1px solid rgba(255,255,255,.38);border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700;
     margin-bottom:0;backdrop-filter:blur(4px)}
