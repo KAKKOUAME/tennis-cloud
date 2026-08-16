@@ -7,6 +7,5 @@ COPY public ./public
 RUN mkdir -p /app/data
 ENV PORT=3000
 EXPOSE 3000
-# 投稿数据持久化：挂载卷到 /app/data
-VOLUME ["/app/data"]
+# 投稿数据持久化：如需跨部署持久化，请在 Railway 控制台为该服务挂载 Volume 到 /app/data
 CMD ["node", "server.js"]
