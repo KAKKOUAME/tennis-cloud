@@ -43,7 +43,15 @@ const QUIZ_BANK = [
   { q: '网球单打“三盘两胜制”中，先赢几盘即获胜？', options: ['1 盘', '2 盘', '3 盘', '4 盘'], a: 1 }
 ];
 
-// ---------- 存储 ----------
+// ---------- 存储（本地文件 + 可选 GitHub Gist 持久化）----------
+// 方案 B（免费持久化）：部署到 Railway 等临时文件系统平台时，设置 GH_TOKEN + GIST_ID，
+// 数据每次改动会异步同步到一个 GitHub Gist（db.json），redeploy/重启后数据不丢。
+const GH_TOKEN = process.env.GH_TOKEN || '';
+const GIST_ID = process.env.GIST_ID || '';
+const USE_GIST = !!(GH_TOKEN && GIST_ID);
+const GIST_API = 'https://api.github.com/gists/' + GIST_ID;
+const GIST_FILENAME = 'db.json';
+
 function ensureDb() {
   if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
   if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, JSON.stringify({ submissions: [] }, null, 2));
@@ -54,14 +62,61 @@ function loadDb() {
   catch (e) { return { submissions: [] }; }
 }
 let _db = loadDb();
-let _saving = false;
-function saveDb() {
-  _saving = true;
-  fs.writeFile(DB_FILE, JSON.stringify(_db, null, 2), (err) => {
-    _saving = false;
-    if (err) console.error('[db] 保存失败:', err.message);
-  });
+let _gistTimer = null;
+
+// 本地缓存写入（始终执行：本地开发默认存储 + 生产环境兜底）
+function flushLocal() {
+  try { fs.writeFileSync(DB_FILE, JSON.stringify(_db, null, 2)); }
+  catch (e) { console.error('[db] 本地缓存写入失败:', e.message); }
 }
+
+// 把当前 _db 推送到 GitHub Gist（异步，不阻塞请求）
+function pushToGist() {
+  if (!USE_GIST) return;
+  const content = JSON.stringify(_db, null, 2);
+  fetch(GIST_API, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'token ' + GH_TOKEN,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json',
+      'User-Agent': 'tennis-cloud'
+    },
+    body: JSON.stringify({ files: { [GIST_FILENAME]: { content } } })
+  })
+    .then((r) => { if (!r.ok) console.error('[gist] 推送失败 HTTP', r.status); else console.log('[gist] 已同步 ' + GIST_FILENAME); })
+    .catch((e) => console.error('[gist] 推送异常:', e.message));
+}
+
+// 启动时从 Gist 拉取最新数据（若配置），覆盖本地缓存
+function syncFromGist() {
+  if (!USE_GIST) return;
+  fetch(GIST_API, {
+    headers: { 'Authorization': 'token ' + GH_TOKEN, 'Accept': 'application/vnd.github+json', 'User-Agent': 'tennis-cloud' }
+  })
+    .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then((g) => {
+      const file = g.files && g.files[GIST_FILENAME];
+      if (file && file.content) {
+        _db = JSON.parse(file.content);
+        flushLocal();
+        console.log('[gist] 已从 Gist 载入 ' + ((_db.submissions) || []).length + ' 条投稿');
+      } else {
+        pushToGist(); // Gist 为空，用本地数据初始化
+      }
+    })
+    .catch((e) => console.error('[gist] 载入失败，使用本地数据:', e.message));
+}
+
+// 防抖推送：多次写入合并为一次网络请求（800ms）
+function scheduleGistPush() {
+  flushLocal();
+  if (!USE_GIST) return;
+  if (_gistTimer) clearTimeout(_gistTimer);
+  _gistTimer = setTimeout(pushToGist, 800);
+}
+
+function saveDb() { scheduleGistPush(); }
 
 function todayStr(d) {
   d = d || new Date();
@@ -349,4 +404,6 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log('🎾 网球技术问答投稿台已启动： http://0.0.0.0:' + PORT);
   console.log('   每日限额=' + DAILY_LIMIT + '  ntfy话题=' + NTFY_TOPIC + '  管理员密码=' + (ADMIN_PASS === 'tennis2026' ? '(默认 tennis2026，请用 ADMIN_PASS 修改)' : '(已自定义)'));
+  console.log('   持久化=' + (USE_GIST ? ('GitHub Gist(' + GIST_ID + ')') : '本地文件 data/db.json'));
+  syncFromGist(); // 启动后从 Gist 拉取最新数据（若已配置）
 });

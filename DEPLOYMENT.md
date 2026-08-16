@@ -86,13 +86,28 @@ git push -u origin main
 
 ## 六、数据持久化（重要）
 
-投稿数据写在 `data/db.json`（容器/实例文件系统内）。
+投稿数据写在 `data/db.json`。本仓库提供**两种免费持久化方案**：
 
-- **Render 免费版**：磁盘临时，重新部署会清空投稿。
-  - 缓解：每次新投稿都会触发 **ntfy 推送 / 邮件**，运营者即使数据被重置也已收到通知，可据此恢复；
-  - 要真正持久：升级到付费计划并挂载 **Persistent Disk** 到 `/app/data`（Render 控制台 → Disks）。
-- **Railway / Koyeb**：挂载付费持久卷到 `/app/data` 即可长期保存。
-- **通用替代**：把存储换成免费数据库（如 Supabase 免费 Postgres），改动集中在 `server.js` 的 `ensureDb/saveDb/loadDb`，本仓库暂不实现。
+### 方案 A：挂载持久卷（平台付费功能）
+- **Railway / Koyeb**：在平台控制台挂载持久卷到 `/app/data` 即可长期保存（需付费计划）。
+- **Render**：升级到付费计划并挂载 **Persistent Disk** 到 `/app/data`（Render 控制台 → Disks）。
+
+### 方案 B：GitHub Gist 同步（完全免费，零额外服务）✅ 已内置
+无需注册新服务（复用你已有的 GitHub）。设置后，每次投稿改动会在 800ms 内异步同步到一个 GitHub Gist（`db.json`），**重新部署 / 实例重启后数据不丢**；本地仍写一份 `data/db.json` 作为兜底缓存。
+
+**配置步骤（一次性）**：
+1. 打开 https://gist.github.com → New gist → 文件名填 **`db.json`**，内容填 `{}`（或留空）→ Create secret/ public gist。
+2. 复制该 Gist 的 ID（URL 末段 `https://gist.github.com/<用户名>/<这里就是ID>`）。
+3. 在平台控制台（Railway Variables / Render Environment / Koyeb env）添加两个变量：
+   - `GH_TOKEN`：一个有 `gist` 权限的 **Personal Access Token**（GitHub → Settings → Developer settings → PAT，勾 `gist` scope）。
+   - `GIST_ID`：上一步复制的 Gist ID。
+4. 重新部署。启动日志会出现 `持久化=GitHub Gist(<id>)`；首次启动会把本地数据写入 Gist，之后每次投稿自动同步。
+
+> 说明：未设置 `GH_TOKEN`/`GIST_ID` 时，自动退回**方案默认（本地文件）**，本地开发不受影响。Gist 有 GitHub API 速率限制（带 token 5000 次/小时，足够），且为单实例写入，适合中小流量演示站。
+
+- **缓解（任何方案都建议保留）**：每次新投稿都会触发 **ntfy 推送 / 邮件**，即使数据被重置运营者也已收到通知。
+
+> 旧方案提示：`server.js` 的 `ensureDb/saveDb/loadDb` 已重构为可插拔；如需换成 Supabase 等托管数据库，改动集中在该段，本仓库暂不实现。
 
 ---
 
@@ -107,6 +122,8 @@ git push -u origin main
 | `NTFY_SERVER` | ntfy 服务地址 | https://ntfy.sh |
 | `BASE_URL` | 公网地址，用于推送点击跳转 | 空 |
 | `EMAIL_TO` | 可选：同时邮件提醒（需 SMTP 代理） | 空 |
+| `GH_TOKEN` | 方案 B 持久化：有 `gist` 权限的 GitHub PAT | 空（不设则用本地文件） |
+| `GIST_ID` | 方案 B 持久化：存放 `db.json` 的 Gist ID | 空（不设则用本地文件） |
 
 ---
 
