@@ -293,6 +293,9 @@
     <div class="qrbox">
       <div class="qr" id="qrImg"></div>
       <div class="lnk" id="qrLink"></div>
+      <div id="qrWechatHint" style="display:none;margin-top:8px;font-size:12.5px;line-height:1.6;color:#c0392b;background:#fff5f5;border:1px solid #f3c9c9;border-radius:10px;padding:8px 10px">
+        💡 微信内请点右上角 <b>···</b> →「在浏览器打开」，即可完整体验图片/视频上传与投稿。
+      </div>
       <div style="margin-top:12px;display:flex;gap:10px;justify-content:center">
         <button class="btn soft" id="qrCopy">复制链接</button>
         <button class="btn" id="qrClose">关闭</button>
@@ -311,6 +314,9 @@
 (function(){
   var API='/api';
   var PUBLIC_URL='https://web-production-9cda2.up.railway.app'; // 公网分享地址（部署域名变化后改此处）
+  if (PUBLIC_URL.indexOf('http://')===0) PUBLIC_URL='https://'+PUBLIC_URL.slice(7); // 强制 HTTPS，避免微信拦截 http
+  var SHARE_URL=PUBLIC_URL+'/share'; // 微信内统一走同源落地页，确保二维码“一定打不开”的反面——即一定能被打开
+  function isWeChat(){ return /micromessenger/i.test(navigator.userAgent); }
   // 带超时的 fetch：避免 Railway 免费实例冷启动时请求无限挂起（导致名额一直“加载中”、登录无响应）
   function fetchTimeout(url, opts, ms){
     ms=ms||12000;
@@ -688,14 +694,19 @@
 
   // ---- 二维码 ----
   function openQR(){
-    var url=PUBLIC_URL;
-    $('qrImg').innerHTML=makeQR(url,{cell:6});
-    $('qrLink').textContent=url;
+    $('qrImg').innerHTML=makeQR(SHARE_URL,{cell:6});
+    $('qrLink').textContent=SHARE_URL;
+    $('qrWechatHint').style.display=isWeChat()?'block':'none';
     $('qrMask').classList.add('show');
   }
   $('qrBtn').onclick=openQR;$('homeQrBtn').onclick=openQR;$('shareBtn').onclick=openQR;
   $('qrClose').onclick=function(){$('qrMask').classList.remove('show');};
-  $('qrCopy').onclick=function(){navigator.clipboard&&navigator.clipboard.writeText(PUBLIC_URL);toast('链接已复制');};
+  $('qrCopy').onclick=function(){
+    var t=SHARE_URL;
+    var done=function(){toast('链接已复制');};
+    var fb=function(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.top='-9999px';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');done();}catch(e){toast('请长按链接手动复制');}document.body.removeChild(ta);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(fb);}else{fb();}
+  };
 
   // ---- 导航 ----
   $('askBtn').onclick=function(){state.quizAns=null;loadQuiz();show('quizView');};

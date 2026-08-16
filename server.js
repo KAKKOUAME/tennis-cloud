@@ -185,6 +185,55 @@ function readBody(req) {
   });
 }
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.json': 'application/json', '.ico': 'image/x-icon' };
+// ---------- 微信分享落地页 ----------
+// 规避微信内打开外链 / scheme 被拦截：二维码统一指向同源 /share，
+// 微信内显示“在浏览器打开”引导，非微信则 302 直跳真实页面。
+function buildSharePage(realUrl) {
+  const REAL = JSON.stringify(realUrl); // 防御 XSS / 注入
+  return '<!doctype html><html lang="zh-CN"><head>'
+    + '<meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+    + '<title>橘猫网球 · 打开方式</title>'
+    + '<style>*{box-sizing:border-box}html,body{margin:0;height:100%}'
+    + 'body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;'
+    + 'background:linear-gradient(160deg,#0f7a3d,#0b5e30);color:#fff;'
+    + 'display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;'
+    + 'padding:24px;text-align:center}'
+    + '.card{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);'
+    + 'border-radius:18px;padding:26px 22px;max-width:360px;width:100%}'
+    + '.logo{font-size:42px;margin-bottom:4px}.ttl{font-size:20px;margin:6px 0 14px;font-weight:700}'
+    + '.tip{font-size:14px;line-height:1.7;color:#eafff0;margin:0 0 14px}'
+    + '.arrow{font-size:30px;margin:8px 0;animation:bob 1.4s ease-in-out infinite}'
+    + '@keyframes bob{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}'
+    + '.btn{display:block;width:100%;padding:13px;border-radius:12px;border:0;font-size:16px;'
+    + 'font-weight:700;cursor:pointer;margin-top:10px}'
+    + '.btn-primary{background:#fff;color:#0b5e30}.btn-ghost{background:transparent;color:#fff;'
+    + 'border:1px solid rgba(255,255,255,.6)}'
+    + '.link{margin-top:14px;font-size:12.5px;word-break:break-all;color:#d9ffe8;'
+    + 'text-decoration:underline;cursor:pointer}'
+    + '.note{margin-top:10px;font-size:11.5px;color:#bfe9cc;opacity:.85}</style></head>'
+    + '<body><div class="card"><div class="logo">🎾</div><h1 class="ttl">橘猫网球</h1>'
+    + '<p class="tip">为获得完整功能（上传图片/视频、提交投稿），请'
+    + '<b style="color:#fff">在浏览器中打开</b>本页面。</p>'
+    + '<div class="arrow">↗</div>'
+    + '<p class="tip" style="margin:0">点右上角 <b>···</b> 菜单，选择 <b>「在浏览器打开」</b></p>'
+    + '<button class="btn btn-primary" id="openBtn">前往打开</button>'
+    + '<button class="btn btn-ghost" id="copyBtn">复制链接</button>'
+    + '<div class="link" id="linkText"></div>'
+    + '<div class="note">若仍无法打开，请复制链接到手机自带浏览器访问。</div></div>'
+    + '<script>var REAL=' + REAL + ';'
+    + 'document.getElementById("linkText").textContent=REAL;'
+    + 'function fallback(){var ta=document.createElement("textarea");ta.value=REAL;'
+    + 'ta.style.position="fixed";ta.style.top="-9999px";document.body.appendChild(ta);'
+    + 'ta.focus();ta.select();try{document.execCommand("copy");alert("链接已复制");}'
+    + 'catch(e){alert("请长按上方链接手动复制");}document.body.removeChild(ta);}'
+    + 'document.getElementById("openBtn").onclick=function(){location.href=REAL;};'
+    + 'document.getElementById("copyBtn").onclick=function(){'
+    + 'if(navigator.clipboard&&navigator.clipboard.writeText){'
+    + 'navigator.clipboard.writeText(REAL).then(function(){alert("链接已复制");}).catch(fallback);}'
+    + 'else{fallback();}};<\/script></body></html>';
+}
+
 function serveStatic(req, res, pathname) {
   let rel = pathname === '/' ? '/index.html' : pathname;
   const filePath = path.normalize(path.join(PUBLIC_DIR, rel));
@@ -388,6 +437,27 @@ const server = http.createServer(async (req, res) => {
       else sub.comments[i].hidden = !!b.hidden;
       saveDb();
       return sendJSON(res, 200, { ok: true });
+    }
+
+    // 微信分享落地页：规避微信内打开外链/scheme 被拦截，统一引导到外部浏览器
+    if (p === '/share' && (m === 'GET' || m === 'HEAD')) {
+      const ua = (req.headers['user-agent'] || '').toLowerCase();
+      const isWx = /micromessenger/i.test(ua);
+      // 由请求推导公网 origin（Railway 等经反向代理，优先用 x-forwarded-proto，始终走 HTTPS）
+      const proto = ((req.headers['x-forwarded-proto'] || 'https').toString().split(',')[0] || 'https').trim();
+      const host = req.headers.host || '';
+      const appBase = (proto.indexOf('http') === 0 ? proto : 'https') + '://' + host;
+      // 解析并校验 ?to= 深链：仅允许同源相对路径，杜绝开放重定向
+      let to = u.searchParams.get('to') || '/';
+      try { to = decodeURIComponent(to); } catch (e) { to = '/'; }
+      if (typeof to !== 'string' || to.charAt(0) !== '/' || to.indexOf('//') !== -1 || to.indexOf('\\') !== -1) to = '/';
+      const realUrl = appBase + to;
+      if (!isWx) {
+        res.writeHead(302, { 'Location': realUrl, 'Cache-Control': 'no-store' });
+        return res.end();
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      return res.end(buildSharePage(realUrl));
     }
 
     // 静态文件
